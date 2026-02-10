@@ -9,7 +9,7 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen(5)
 
-print(f"[SOCKET SERVER] Listening on {HOST}:{PORT}")
+print(f"[SOCKET SERVER] Listening on - {HOST}:{PORT}")
 
 while True:
     conn, addr = server.accept()
