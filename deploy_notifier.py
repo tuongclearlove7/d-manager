@@ -26,7 +26,11 @@ payload = {
     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 }
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect((SERVER_HOST, SERVER_PORT))
-sock.send(json.dumps(payload).encode())
-sock.close()
+try:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(3)
+    sock.connect((SERVER_HOST, SERVER_PORT))
+    sock.send(json.dumps(payload).encode())
+    sock.close()
+except:
+    pass
