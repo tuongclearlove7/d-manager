@@ -49,6 +49,31 @@ def get_changed_files():
 
 
 # =========================
+# DEPLOY FUNCTION
+# =========================
+def run_deploy():
+    try:
+        print("[DEPLOY] Running docker compose build...")
+
+        result = subprocess.run(
+            ["docker", "compose", "up", "-d", "--build"],
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode == 0:
+            print("[DEPLOY] SUCCESS")
+            return "SUCCESS", result.stdout
+        else:
+            print("[DEPLOY] FAILED")
+            return "FAILED", result.stderr
+
+    except Exception as e:
+        print("[DEPLOY ERROR]", e)
+        return "FAILED", str(e)
+
+
+# =========================
 # SAVE HISTORY
 # =========================
 def save_to_file(payload):
@@ -92,10 +117,13 @@ async def watch_git():
             if current_commit != last_commit:
                 last_commit = current_commit
 
+                # 🚀 RUN DEPLOY
+                status, deploy_log = run_deploy()
+
                 payload = {
                     "project": PROJECT_NAME,
-                    "status": "SUCCESS",
-                    "message": "New deploy detected",
+                    "status": status,
+                    "message": deploy_log[-500:],  # lấy 500 ký tự cuối log
                     "commit": current_commit,
                     "commit_message": get_commit_message(),
                     "files_changed": get_changed_files(),

@@ -3,15 +3,19 @@ version: "3.8"
 services:
   socket-server:
     build: .
+    container_name: d-manager-socket-server
     command: python backend/app/main.py
     ports:
       - "9000:9000"
     restart: always
     volumes:
       - ./data:/app/data
+    networks:
+      - dmanager-net
 
   deploy-listen:
     build: .
+    container_name: d-manager-deploy-listen
     command: python backend/app/listen.py
     environment:
       - WS_SERVER=ws://socket-server:9000
@@ -21,3 +25,10 @@ services:
     volumes:
       - .:/app
       - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock   # 👈 QUAN TRỌNG
+    networks:
+      - dmanager-net
+
+networks:
+  dmanager-net:
+    driver: bridge
