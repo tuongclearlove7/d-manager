@@ -7,6 +7,7 @@ import websockets
 
 SERVER = os.getenv("WS_SERVER", "ws://socket-server:9000")
 PROJECT_NAME = "d-manager"
+DATA_FILE = "/app/data.txt"
 
 
 def build_payload():
@@ -35,6 +36,13 @@ def build_payload():
     }
 
 
+def save_to_file(payload):
+    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
+
+    with open(DATA_FILE, "a") as f:
+        f.write(json.dumps(payload) + "\n")
+
+
 async def send(payload):
     try:
         async with websockets.connect(SERVER) as ws:
@@ -49,4 +57,9 @@ async def send(payload):
 
 if __name__ == "__main__":
     payload = build_payload()
+
+    # 🔥 1. ghi file trước
+    save_to_file(payload)
+
+    # 🔥 2. gửi socket
     asyncio.run(send(payload))

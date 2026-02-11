@@ -3,36 +3,36 @@ import json
 import websockets
 import os
 
-DATA_FILE = "data.txt"
+DATA_FILE = "/app/data.txt"
 MAX_EVENTS = 50
 
 
 class WebSocketManager:
     def __init__(self):
-        self.deploy_events = []
         self.connected = set()
-        self.load_data()
 
-    # 🔥 Load dữ liệu khi server start
     def load_data(self):
+        events = []
+
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, "r") as f:
                 for line in f:
                     try:
-                        self.deploy_events.append(json.loads(line.strip()))
+                        events.append(json.loads(line.strip()))
                     except:
                         pass
 
-            self.deploy_events = self.deploy_events[-MAX_EVENTS:]
+        return events[-MAX_EVENTS:]
 
     async def handler(self, websocket):
         self.connected.add(websocket)
         print(f"[CONNECT] {websocket.remote_address}")
 
-        # gửi dữ liệu cũ
+        events = self.load_data()
+
         await websocket.send(json.dumps({
             "type": "init",
-            "data": self.deploy_events
+            "data": events
         }))
 
         try:
@@ -41,14 +41,6 @@ class WebSocketManager:
 
                 if data.get("type") == "deploy":
                     payload = data.get("payload")
-
-                    self.deploy_events.append(payload)
-                    self.deploy_events = self.deploy_events[-MAX_EVENTS:]
-
-                    # 🔥 Lưu file
-                    with open(DATA_FILE, "a") as f:
-                        f.write(json.dumps(payload) + "\n")
-
                     await self.broadcast(payload)
 
         except Exception:
@@ -70,7 +62,8 @@ class WebSocketManager:
 manager = WebSocketManager()
 
 
+# 🔥 Đây là hàm main.py đang gọi
 async def start_websocket_server():
     async with websockets.serve(manager.handler, "0.0.0.0", 9000):
         print("WebSocket running on :9000")
-        await asyncio.Future()
+        await asyncio.Future()  # giữ server chạy mãi
