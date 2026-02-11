@@ -1,15 +1,29 @@
 import asyncio
 import json
 import websockets
+import os
 
+DATA_FILE = "data.txt"
 DEPLOY_EVENTS = []
 MAX_EVENTS = 50
 CONNECTED = set()
+
+# 🔥 LOAD DATA KHI SERVER START
+if os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "r") as f:
+        for line in f:
+            try:
+                DEPLOY_EVENTS.append(json.loads(line.strip()))
+            except:
+                pass
+
+    DEPLOY_EVENTS[:] = DEPLOY_EVENTS[-MAX_EVENTS:]
 
 async def handler(websocket):
     CONNECTED.add(websocket)
     print(f"[CONNECT] {websocket.remote_address}")
 
+    # gửi dữ liệu cũ
     await websocket.send(json.dumps({
         "type": "init",
         "data": DEPLOY_EVENTS
@@ -25,7 +39,11 @@ async def handler(websocket):
                 DEPLOY_EVENTS.append(payload)
                 DEPLOY_EVENTS[:] = DEPLOY_EVENTS[-MAX_EVENTS:]
 
-                # broadcast cho tất cả client
+                # 🔥 LƯU FILE
+                with open(DATA_FILE, "a") as f:
+                    f.write(json.dumps(payload) + "\n")
+
+                # broadcast
                 for ws in CONNECTED.copy():
                     try:
                         await ws.send(json.dumps({
