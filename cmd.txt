@@ -5,5 +5,3 @@ $ chmod +x deploy.sh
 $ rm -rf deploy.sh
 
 $ nano deploy.sh
-
-$ 
