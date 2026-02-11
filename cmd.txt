@@ -6,4 +6,6 @@ $ rm -rf deploy.sh
 
 $ nano deploy.sh
 
-$ docker logs --tail 100 d-manager-socket-server-1
+$ docker logs --tail 10 d-manager-socket-server-1
+
+$ docker logs --tail 10 d-manager-deploy-listen-1
