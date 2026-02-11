@@ -12,8 +12,9 @@
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-          'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+          "Helvetica Neue", sans-serif;
         background: linear-gradient(to bottom, #0f172a, #1a1f35);
         color: #e2e8f0;
         min-height: 100vh;
@@ -23,26 +24,34 @@
 
       /* Background decorative elements */
       body::before {
-        content: '';
+        content: "";
         position: fixed;
         top: 0;
         right: 10%;
         width: 400px;
         height: 400px;
-        background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+        background: radial-gradient(
+          circle,
+          rgba(59, 130, 246, 0.08) 0%,
+          transparent 70%
+        );
         border-radius: 50%;
         pointer-events: none;
         z-index: 0;
       }
 
       body::after {
-        content: '';
+        content: "";
         position: fixed;
         bottom: 20%;
         left: 5%;
         width: 300px;
         height: 300px;
-        background: radial-gradient(circle, rgba(100, 116, 139, 0.1) 0%, transparent 70%);
+        background: radial-gradient(
+          circle,
+          rgba(100, 116, 139, 0.1) 0%,
+          transparent 70%
+        );
         border-radius: 50%;
         pointer-events: none;
         z-index: 0;
@@ -152,7 +161,11 @@
       .event-card {
         border: 1px solid #1e293b;
         border-radius: 8px;
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(30, 41, 59, 0.4));
+        background: linear-gradient(
+          135deg,
+          rgba(15, 23, 42, 0.6),
+          rgba(30, 41, 59, 0.4)
+        );
         padding: 20px;
         transition: all 0.3s ease;
         position: relative;
@@ -160,18 +173,27 @@
       }
 
       .event-card::before {
-        content: '';
+        content: "";
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(59, 130, 246, 0.3),
+          transparent
+        );
       }
 
       .event-card:hover {
         border-color: #334155;
-        background: linear-gradient(135deg, rgba(20, 30, 50, 0.8), rgba(35, 50, 70, 0.5));
+        background: linear-gradient(
+          135deg,
+          rgba(20, 30, 50, 0.8),
+          rgba(35, 50, 70, 0.5)
+        );
         box-shadow: 0 0 24px rgba(59, 130, 246, 0.08);
         transform: translateY(-2px);
       }
@@ -315,7 +337,7 @@
       .info-value {
         font-size: 13px;
         color: #cbd5e1;
-        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
         background-color: rgba(30, 41, 59, 0.5);
         padding: 8px 10px;
         border-radius: 4px;
@@ -340,7 +362,7 @@
         border-radius: 4px;
         font-size: 11px;
         color: #93c5fd;
-        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -450,106 +472,110 @@
     </main>
 
     <script>
-      const WS_URL = 'ws://103.161.97.193:9000'
-      const container = document.getElementById('events')
-      const connectionDot = document.getElementById('connectionDot')
-      const connectionText = document.getElementById('connectionText')
+      const WS_URL = "ws://103.161.97.193:9000";
+      const container = document.getElementById("events");
+      const connectionDot = document.getElementById("connectionDot");
+      const connectionText = document.getElementById("connectionText");
 
-      let ws
-      let eventCount = 0
+      let ws;
+      let eventCount = 0;
 
       function updateConnectionStatus(status) {
-        connectionDot.className = `status-dot ${status}`
+        connectionDot.className = `status-dot ${status}`;
 
-        if (status === 'connected') {
-          connectionText.textContent = 'Connected'
-        } else if (status === 'connecting') {
-          connectionText.textContent = 'Connecting...'
+        if (status === "connected") {
+          connectionText.textContent = "Connected";
+        } else if (status === "connecting") {
+          connectionText.textContent = "Connecting...";
         } else {
-          connectionText.textContent = 'Disconnected'
+          connectionText.textContent = "Disconnected";
         }
       }
 
       function formatTime(timestamp) {
-        if (!timestamp) return 'N/A'
-        const date = new Date(timestamp)
-        return date.toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
+        if (!timestamp) return "N/A";
+        const date = new Date(timestamp);
+        return date.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
           hour12: true,
-        })
+        });
       }
 
       function getStatusClass(status) {
-        const statusLower = (status || '').toLowerCase()
-        if (statusLower.includes('success') || statusLower === 'ready')
-          return 'success'
-        if (statusLower.includes('fail')) return 'failed'
-        if (statusLower.includes('build')) return 'building'
-        if (statusLower.includes('deploy')) return 'deploying'
-        return 'ready'
+        const statusLower = (status || "").toLowerCase();
+        if (statusLower.includes("success") || statusLower === "ready")
+          return "success";
+        if (statusLower.includes("fail")) return "failed";
+        if (statusLower.includes("build")) return "building";
+        if (statusLower.includes("deploy")) return "deploying";
+        return "ready";
       }
 
       function renderEvent(data) {
-        console.log('Received:', data)
+        console.log("Received:", data);
 
         if (eventCount === 0) {
-          container.innerHTML = ''
+          container.innerHTML = "";
         }
 
-        const div = document.createElement('div')
-        div.className = 'event-card'
+        const div = document.createElement("div");
+        div.className = "event-card";
 
         const files = Array.isArray(data.files_changed)
           ? data.files_changed
-          : typeof data.files_changed === 'string'
-            ? data.files_changed.split(',')
-            : []
+          : typeof data.files_changed === "string"
+          ? data.files_changed.split(",")
+          : [];
 
-        const displayFiles = files.slice(0, 5)
-        const moreCount = Math.max(0, files.length - 5)
+        const displayFiles = files.slice(0, 5);
+        const moreCount = Math.max(0, files.length - 5);
 
-        const statusClass = getStatusClass(data.status)
-        const projectName = data.project || data.service || 'Unknown Project'
-        const status = data.status || 'Ready'
+        const statusClass = getStatusClass(data.status);
+        const projectName = data.project || data.service || "Unknown Project";
+        const status = data.status || "Ready";
 
-        let infoGrid = ''
+        let infoGrid = "";
         if (data.commit) {
           infoGrid += `
         <div class="info-item">
           <span class="info-label">Commit</span>
-          <span class="info-value" title="${data.commit}">${data.commit.substring(0, 8)}</span>
+          <span class="info-value" title="${
+            data.commit
+          }">${data.commit.substring(0, 8)}</span>
         </div>
-      `
+      `;
         }
 
         if (data.commit_message) {
           infoGrid += `
         <div class="info-item">
           <span class="info-label">Message</span>
-          <span class="info-value" title="${data.commit_message}">${data.commit_message.substring(0, 40)}</span>
+          <span class="info-value" title="${
+            data.commit_message
+          }">${data.commit_message.substring(0, 40)}</span>
         </div>
-      `
+      `;
         }
 
-        let filesHtml = ''
+        let filesHtml = "";
         if (displayFiles.length > 0) {
-          filesHtml = '<div class="files-section">'
+          filesHtml = '<div class="files-section">';
           displayFiles.forEach((file) => {
-            filesHtml += `<span class="file-tag" title="${file}">${file}</span>`
-          })
+            filesHtml += `<span class="file-tag" title="${file}">${file}</span>`;
+          });
           if (moreCount > 0) {
-            filesHtml += `<span class="file-tag more">+${moreCount} more</span>`
+            filesHtml += `<span class="file-tag more">+${moreCount} more</span>`;
           }
-          filesHtml += '</div>'
+          filesHtml += "</div>";
         }
 
-        let messageBox = ''
+        let messageBox = "";
         if (data.message) {
-          messageBox = `<div class="message-box">${data.message}</div>`
+          messageBox = `<div class="message-box">${data.message}</div>`;
         }
 
         div.innerHTML = `
@@ -568,57 +594,66 @@
         ${infoGrid}
       </div>
       ${filesHtml}
-    `
+    `;
 
-        container.prepend(div)
-        eventCount++
+        container.prepend(div);
+        eventCount++;
       }
 
       function connect() {
         try {
-          ws = new WebSocket(WS_URL)
+          ws = new WebSocket(WS_URL);
 
           ws.onopen = function () {
-            console.log('✅ Connected to WebSocket server')
-            updateConnectionStatus('connected')
-          }
+            console.log("✅ Connected to WebSocket server");
+            updateConnectionStatus("connected");
+          };
 
           ws.onmessage = function (event) {
             try {
-              const msg = JSON.parse(event.data)
+              const msg = JSON.parse(event.data);
 
-              if (msg.type === 'init') {
-                if (Array.isArray(msg.data)) {
-                  msg.data.forEach(renderEvent)
+              if (msg.type === "init") {
+                container.innerHTML = "";
+
+                if (Array.isArray(msg.data) && msg.data.length > 0) {
+                  msg.data.forEach(renderEvent);
+                } else {
+                  container.innerHTML = `
+          <div class="empty-state">
+            <h2>No deployment yet</h2>
+            <p>System connected. Waiting for first deploy...</p>
+          </div>
+        `;
                 }
               }
 
-              if (msg.type === 'deploy') {
-                renderEvent(msg.data)
+              if (msg.type === "deploy") {
+                renderEvent(msg.payload); // 🔥 FIX QUAN TRỌNG
               }
             } catch (e) {
-              console.error('❌ Parse error:', e)
+              console.error("❌ Parse error:", e);
             }
-          }
+          };
 
           ws.onerror = function (error) {
-            console.error('❌ WebSocket error:', error)
-            updateConnectionStatus('disconnected')
-          }
+            console.error("❌ WebSocket error:", error);
+            updateConnectionStatus("disconnected");
+          };
 
           ws.onclose = function () {
-            console.warn('⚠️ WebSocket disconnected. Reconnecting in 3s...')
-            updateConnectionStatus('disconnected')
-            setTimeout(connect, 3000)
-          }
+            console.warn("⚠️ WebSocket disconnected. Reconnecting in 3s...");
+            updateConnectionStatus("disconnected");
+            setTimeout(connect, 3000);
+          };
         } catch (e) {
-          console.error('❌ Connection failed:', e)
-          updateConnectionStatus('disconnected')
-          setTimeout(connect, 3000)
+          console.error("❌ Connection failed:", e);
+          updateConnectionStatus("disconnected");
+          setTimeout(connect, 3000);
         }
       }
 
-      connect()
+      connect();
     </script>
   </body>
 </html>
