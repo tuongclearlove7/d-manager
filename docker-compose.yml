@@ -7,7 +7,7 @@ services:
       - "9000:9000"
     restart: always
     volumes:
-      - ./data.txt:/app/data.txt
+      - ./data:/app/data
 
   deploy-listen:
     build: .
@@ -16,3 +16,5 @@ services:
       - WS_SERVER=ws://socket-server:9000
     depends_on:
       - socket-server
+    volumes:
+      - ./data:/app/data

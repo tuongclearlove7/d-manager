@@ -3,9 +3,8 @@ import json
 import websockets
 import os
 
-DATA_FILE = "/app/data.txt"
+DATA_FILE = "/app/data/data.txt"
 MAX_EVENTS = 50
-
 
 class WebSocketManager:
     def __init__(self):

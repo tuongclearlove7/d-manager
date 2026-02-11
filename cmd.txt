@@ -5,3 +5,5 @@ $ chmod +x deploy.sh
 $ rm -rf deploy.sh
 
 $ nano deploy.sh
+
+$ docker logs --tail 100 d-manager-socket-server-1
