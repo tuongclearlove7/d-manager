@@ -1,84 +1,50 @@
 <!doctype html>
 <html>
   <head>
-    <meta charset="UTF-8" />
     <title>Deploy Monitor</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background: #111;
-        color: #eee;
-        padding: 20px;
-      }
-      h2 {
-        color: #00ffcc;
-      }
-      .event {
-        background: #1e1e1e;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-left: 4px solid #00ffcc;
-      }
-      .fail {
-        border-left-color: red;
-      }
-      .success {
-        border-left-color: limegreen;
-      }
-    </style>
   </head>
   <body>
-    <h2>🚀 Deploy Realtime Monitor</h2>
+    <h2>Realtime Deploy Events</h2>
     <div id="events"></div>
 
     <script>
-      const WS_URL = "ws://103.161.97.193:9000";
+      const ws = new WebSocket("ws://103.161.97.193:9000");
       const container = document.getElementById("events");
 
-      function renderEvent(event) {
+      ws.onmessage = function (event) {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === "init") {
+          msg.data.forEach(renderEvent);
+        }
+
+        if (msg.type === "deploy") {
+          renderEvent(msg.data);
+        }
+      };
+
+      function renderEvent(data) {
         const div = document.createElement("div");
-        div.className =
-          "event " + (event.status === "FAIL" ? "fail" : "success");
+        div.style.border = "1px solid #ccc";
+        div.style.margin = "10px";
+        div.style.padding = "10px";
+
+        const files = Array.isArray(data.files_changed)
+          ? data.files_changed.join(", ")
+          : "N/A";
 
         div.innerHTML = `
-            <strong>Service:</strong> ${event.service}<br>
-            <strong>Status:</strong> ${event.status}<br>
-            <strong>Message:</strong> ${event.message}<br>
-            <strong>Commit:</strong> ${event.commit}<br>
-            <strong>Time:</strong> ${event.time}
-        `;
+        <b>Project:</b> ${data.project || data.service || "N/A"}<br>
+        <b>Status:</b> ${data.status || "N/A"}<br>
+        <b>Message:</b> ${data.message || "N/A"}<br>
+        <b>Commit:</b> ${data.commit || "N/A"}<br>
+        <b>Commit Message:</b> ${data.commit_message || "N/A"}<br>
+        <b>Files:</b> ${files}<br>
+        <b>Time:</b> ${data.time || "N/A"}
+    `;
 
         container.prepend(div);
       }
-
-      const ws = new WebSocket(WS_URL);
-
-      ws.onopen = () => {
-        console.log("Connected to WebSocket server");
-      };
-
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-
-        console.log("Received:", data);
-
-        if (data.type === "init") {
-          container.innerHTML = "";
-          data.data.forEach(renderEvent);
-        }
-
-        if (data.type === "deploy") {
-          renderEvent(data.data);
-        }
-      };
-
-      ws.onerror = (err) => {
-        console.error("WebSocket error:", err);
-      };
-
-      ws.onclose = () => {
-        console.log("WebSocket disconnected");
-      };
     </script>
   </body>
 </html>

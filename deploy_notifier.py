@@ -6,14 +6,10 @@ from datetime import datetime
 import subprocess
 import websockets
 
-# =========================
-# CONFIG
-# =========================
 SERVER = os.getenv("WS_SERVER", "ws://socket-server:9000")
+PROJECT_NAME = "d-manager"
+DATA_FILE = "data.txt"
 
-# =========================
-# INPUT VALIDATION
-# =========================
 if len(sys.argv) < 2:
     print("Usage: deploy_notifier.py STATUS [MESSAGE]")
     sys.exit(1)
@@ -22,52 +18,61 @@ status = sys.argv[1]
 message = sys.argv[2] if len(sys.argv) > 2 else ""
 
 # =========================
-# GET GIT COMMIT
+# GIT INFO
 # =========================
 def get_commit():
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            stderr=subprocess.DEVNULL
+            ["git", "rev-parse", "--short", "HEAD"]
         ).decode().strip()
     except:
         return "unknown"
 
+def get_commit_message():
+    try:
+        return subprocess.check_output(
+            ["git", "log", "-1", "--pretty=%B"]
+        ).decode().strip()
+    except:
+        return "unknown"
+
+def get_changed_files():
+    try:
+        files = subprocess.check_output(
+            ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"]
+        ).decode().strip().split("\n")
+        return files
+    except:
+        return []
+
 payload = {
-    "service": "d-manager",
+    "project": PROJECT_NAME,
     "status": status,
     "message": message,
     "commit": get_commit(),
+    "commit_message": get_commit_message(),
+    "files_changed": get_changed_files(),
     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 }
 
 # =========================
-# SEND FUNCTION
+# SAVE TO FILE
+# =========================
+with open(DATA_FILE, "a") as f:
+    f.write(json.dumps(payload) + "\n")
+
+# =========================
+# SEND TO SOCKET
 # =========================
 async def send():
-    print(f"[NOTIFIER] connecting → {SERVER}", flush=True)
-
     try:
-        async with websockets.connect(SERVER, open_timeout=3) as ws:
-            msg = {
+        async with websockets.connect(SERVER) as ws:
+            await ws.send(json.dumps({
                 "type": "deploy",
                 "payload": payload
-            }
-
-            print("[NOTIFIER] sending payload:", flush=True)
-            print(json.dumps(msg, indent=2), flush=True)
-
-            await ws.send(json.dumps(msg))
-
-            print("[NOTIFIER] send success ✅", flush=True)
-            return 0
-
+            }))
+            print("[NOTIFIER] sent successfully")
     except Exception as e:
-        print(f"[NOTIFIER][ERROR] {e}", flush=True)
-        return 1
+        print("[NOTIFIER ERROR]", e)
 
-# =========================
-# RUN
-# =========================
-exit_code = asyncio.run(send())
-sys.exit(exit_code)
+asyncio.run(send())
