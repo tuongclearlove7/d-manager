@@ -1,37 +1,57 @@
-import socket
+import asyncio
 import json
+import websockets
+from datetime import datetime
 
-HOST = "0.0.0.0"
-PORT = 9000
+DEPLOY_EVENTS = []
+MAX_EVENTS = 50
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server.bind((HOST, PORT))
-server.listen(5)
+async def handler(websocket):
+    client = websocket.remote_address
+    print(f"[CONNECT] client={client}", flush=True)
 
-print(f"[SOCKET SERVER] Listening on {HOST}:{PORT}", flush=True)
-
-while True:
-    conn, addr = server.accept()
-    print(f"[CONNECT] {addr}", flush=True)
+    # gửi init data
+    print(f"[SEND][INIT] events={len(DEPLOY_EVENTS)}", flush=True)
+    await websocket.send(json.dumps({
+        "type": "init",
+        "data": DEPLOY_EVENTS
+    }))
 
     try:
-        data = conn.recv(4096).decode()
-        if not data:
-            conn.close()
-            continue
+        async for message in websocket:
+            print(f"[RECV] raw={message}", flush=True)
 
-        payload = json.loads(data)
+            data = json.loads(message)
+            msg_type = data.get("type")
 
-        print("====== DEPLOY EVENT ======", flush=True)
-        print(f"Service : {payload.get('service')}", flush=True)
-        print(f"Status  : {payload.get('status')}", flush=True)
-        print(f"Message : {payload.get('message')}", flush=True)
-        print(f"Commit  : {payload.get('commit')}", flush=True)
-        print(f"Time    : {payload.get('time')}", flush=True)
-        print("==========================", flush=True)
+            if msg_type == "deploy":
+                payload = data.get("payload")
+                print(f"[DEPLOY] payload={payload}", flush=True)
+
+                DEPLOY_EVENTS.append(payload)
+                DEPLOY_EVENTS[:] = DEPLOY_EVENTS[-MAX_EVENTS:]
+
+                print(f"[STORE] total_events={len(DEPLOY_EVENTS)}", flush=True)
+
+                # broadcast
+                for ws in websocket.server.websockets:
+                    print(f"[BROADCAST] to={ws.remote_address}", flush=True)
+                    await ws.send(json.dumps({
+                        "type": "deploy",
+                        "data": payload
+                    }))
+            else:
+                print(f"[WARN] unknown type={msg_type}", flush=True)
+
+    except websockets.ConnectionClosed:
+        print(f"[DISCONNECT] client={client}", flush=True)
 
     except Exception as e:
-        print("[ERROR]", e, flush=True)
+        print(f"[ERROR] {e}", flush=True)
 
-    conn.close()
+async def main():
+    async with websockets.serve(handler, "0.0.0.0", 9000):
+        print("[WS SERVER] listening on :9000", flush=True)
+        await asyncio.Future()
+
+asyncio.run(main())

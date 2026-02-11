@@ -6,4 +6,12 @@ services:
     container_name: socket-server
     ports:
       - "9000:9000"
-    restart: always
+
+  deploy-notifier:
+    image: python:3.11-slim
+    volumes:
+      - ./deploy_notifier.py:/app/deploy_notifier.py
+    working_dir: /app
+    command: python deploy_notifier.py SUCCESS "deploy ok"
+    depends_on:
+      - socket-server

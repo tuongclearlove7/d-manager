@@ -1,13 +1,13 @@
-import socket
+import asyncio
 import json
 import sys
 from datetime import datetime
 import subprocess
+import websockets
 
-SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 9000
+SERVER = "ws://127.0.0.1:9000"
 
-status = sys.argv[1] if len(sys.argv) > 1 else "UNKNOWN"
+status = sys.argv[1]
 message = sys.argv[2] if len(sys.argv) > 2 else ""
 
 def get_commit():
@@ -26,11 +26,18 @@ payload = {
     "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 }
 
-try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(3)
-    sock.connect((SERVER_HOST, SERVER_PORT))
-    sock.send(json.dumps(payload).encode())
-    sock.close()
-except:
-    pass
+async def send():
+    print("[NOTIFIER] connecting to server...", flush=True)
+    try:
+        async with websockets.connect(SERVER) as ws:
+            msg = {
+                "type": "deploy",
+                "payload": payload
+            }
+            print(f"[NOTIFIER] send={msg}", flush=True)
+            await ws.send(json.dumps(msg))
+            print("[NOTIFIER] send success", flush=True)
+    except Exception as e:
+        print(f"[NOTIFIER][ERROR] {e}", flush=True)
+
+asyncio.run(send())
