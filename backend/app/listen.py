@@ -1,31 +1,47 @@
 import asyncio
 import json
 import os
-import stat
-from datetime import datetime
 import websockets
 
 SERVER = os.getenv("WS_SERVER", "ws://socket-server:9000")
-PROJECT_NAME = "d-manager"
 
 DATA_DIR = "/app/data"
 DATA_FILE = os.path.join(DATA_DIR, "data.txt")
 DEPLOY_TRIGGER = os.path.join(DATA_DIR, "deploy.txt")
 
+
+# =========================
+# ENSURE DATA FOLDER
+# =========================
 def ensure_data_directory():
     try:
-        # Tạo thư mục nếu chưa có
         os.makedirs(DATA_DIR, exist_ok=True)
-
-        # Set quyền 777 cho folder
         os.chmod(DATA_DIR, 0o777)
-
         print("[PERMISSION] Data directory ready")
-
     except Exception as e:
         print("[PERMISSION ERROR]", e)
 
 
+# =========================
+# SAVE HISTORY
+# =========================
+def save_to_file(payload):
+    ensure_data_directory()
+
+    try:
+        with open(DATA_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(payload) + "\n")
+
+        os.chmod(DATA_FILE, 0o666)
+        print("[LISTEN] Saved to data.txt")
+
+    except Exception as e:
+        print("[FILE ERROR]", e)
+
+
+# =========================
+# SEND TO SOCKET SERVER
+# =========================
 async def send(payload):
     try:
         async with websockets.connect(SERVER) as ws:
@@ -38,22 +54,9 @@ async def send(payload):
         print("[SOCKET ERROR]", e)
 
 
-def save_to_file(payload):
-    ensure_data_directory()
-
-    try:
-        with open(DATA_FILE, "a", encoding="utf-8") as f:
-            f.write(json.dumps(payload) + "\n")
-
-        # Set quyền file sau khi tạo
-        os.chmod(DATA_FILE, 0o666)
-
-        print("[LISTEN] Saved to data.txt")
-
-    except Exception as e:
-        print("[FILE ERROR]", e)
-
-
+# =========================
+# WATCH DEPLOY FILE
+# =========================
 async def watch_deploy():
     print("[LISTEN] Waiting for deploy trigger...")
 
@@ -63,21 +66,20 @@ async def watch_deploy():
     while True:
         try:
             if os.path.exists(DEPLOY_TRIGGER):
-                with open(DEPLOY_TRIGGER, "r") as f:
+
+                with open(DEPLOY_TRIGGER, "r", encoding="utf-8") as f:
                     content = f.read().strip()
 
+                # chỉ xử lý khi có nội dung mới
                 if content and content != last_content:
                     last_content = content
 
-                    payload = {
-                        "project": PROJECT_NAME,
-                        "status": "SUCCESS",
-                        "message": content,
-                        "commit": "auto",
-                        "commit_message": content,
-                        "files_changed": [],
-                        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    }
+                    try:
+                        payload = json.loads(content)
+                    except json.JSONDecodeError:
+                        print("[ERROR] deploy.txt is not valid JSON")
+                        await asyncio.sleep(2)
+                        continue
 
                     save_to_file(payload)
                     await send(payload)
