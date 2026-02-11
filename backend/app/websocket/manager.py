@@ -19,8 +19,8 @@ class WebSocketManager:
                 for line in f:
                     try:
                         events.append(json.loads(line.strip()))
-                    except:
-                        pass
+                    except json.JSONDecodeError:
+                        print("[LOAD WARNING] Invalid JSON line skipped")
 
         return events[-MAX_EVENTS:]
 
@@ -29,7 +29,7 @@ class WebSocketManager:
         print(f"[CONNECT] {websocket.remote_address}")
 
         try:
-            # 🔥 Gửi init ngay khi connect
+            # Gửi history khi client connect
             events = self.load_data()
 
             await websocket.send(json.dumps({
@@ -38,16 +38,23 @@ class WebSocketManager:
             }))
 
             async for message in websocket:
-                data = json.loads(message)
+                try:
+                    data = json.loads(message)
+                except json.JSONDecodeError:
+                    print("[ERROR] Invalid JSON received")
+                    continue
 
                 if data.get("type") == "deploy":
                     payload = data.get("payload")
 
-                    # 🔥 Broadcast đúng format
-                    await self.broadcast({
-                        "type": "deploy",
-                        "payload": payload
-                    })
+                    if payload:
+                        await self.broadcast({
+                            "type": "deploy",
+                            "payload": payload
+                        })
+
+        except websockets.exceptions.ConnectionClosed:
+            print("[INFO] Client disconnected normally")
 
         except Exception as e:
             print("[ERROR]", e)
@@ -60,16 +67,28 @@ class WebSocketManager:
         if not self.connected:
             return
 
-        await asyncio.gather(
-            *[ws.send(json.dumps(message)) for ws in self.connected.copy()],
-            return_exceptions=True
-        )
+        dead_connections = set()
+
+        for ws in self.connected.copy():
+            try:
+                await ws.send(json.dumps(message))
+            except Exception:
+                dead_connections.add(ws)
+
+        # Remove dead sockets
+        self.connected -= dead_connections
 
 
 manager = WebSocketManager()
 
 
 async def start_websocket_server():
-    async with websockets.serve(manager.handler, "0.0.0.0", 9000):
+    async with websockets.serve(
+        manager.handler,
+        "0.0.0.0",
+        9000,
+        ping_interval=20,
+        ping_timeout=20
+    ):
         print("WebSocket running on :9000")
-        await asyncio.Future()
+        await asyncio.Future()  # run forever
