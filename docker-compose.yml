@@ -3,7 +3,7 @@ version: "3.8"
 services:
   socket-server:
     build: .
-    command: python backend/app/websocket/manager.py
+    command: python backend/app/main.py
     ports:
       - "9000:9000"
     restart: always
@@ -19,5 +19,5 @@ services:
       - socket-server
     restart: always
     volumes:
-      - .:/app              # 👈 QUAN TRỌNG (mount project + .git)
+      - .:/app
       - ./data:/app/data
