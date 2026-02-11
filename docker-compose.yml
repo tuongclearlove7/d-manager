@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   socket-server:
     build: .
@@ -8,10 +10,10 @@ services:
     volumes:
       - ./data.txt:/app/data.txt
 
-  deploy-notifier:
+  deploy-listen:
     build: .
-    container_name: deploy-notifier
-    entrypoint: ["python", "deploy_notifier.py"]
+    container_name: deploy-listen
+    entrypoint: ["python", "backend/app/listen.py"]
     environment:
       - WS_SERVER=ws://socket-server:9000
     depends_on:
