@@ -3,7 +3,6 @@ version: "3.8"
 services:
   socket-server:
     build: .
-    container_name: socket-server
     ports:
       - "9000:9000"
     restart: always
@@ -12,7 +11,6 @@ services:
 
   deploy-listen:
     build: .
-    container_name: deploy-listen
     entrypoint: ["python", "backend/app/listen.py"]
     environment:
       - WS_SERVER=ws://socket-server:9000
