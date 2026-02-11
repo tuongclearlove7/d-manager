@@ -3,7 +3,7 @@ version: "3.8"
 services:
   socket-server:
     build: .
-    command: python backend/app/manager.py
+    command: python backend/app/websocket/manager.py
     ports:
       - "9000:9000"
     restart: always
