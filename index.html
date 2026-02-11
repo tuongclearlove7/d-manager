@@ -613,6 +613,9 @@
             try {
               const msg = JSON.parse(event.data);
 
+              console.log('data: ', msg);
+              
+
               if (msg.type === "init") {
                 container.innerHTML = "";
 
