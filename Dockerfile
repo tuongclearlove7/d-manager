@@ -4,9 +4,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# 👇 CÀI GIT
 RUN apt-get update && apt-get install -y git \
     && rm -rf /var/lib/apt/lists/*
+
+# 👇 FIX DUBIOUS OWNERSHIP
+RUN git config --global --add safe.directory /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
