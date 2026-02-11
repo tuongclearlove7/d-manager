@@ -12,7 +12,6 @@ DATA_DIR = "/app/data"
 DATA_FILE = os.path.join(DATA_DIR, "data.txt")
 DEPLOY_TRIGGER = os.path.join(DATA_DIR, "deploy.txt")
 
-
 def ensure_data_directory():
     try:
         # Tạo thư mục nếu chưa có
