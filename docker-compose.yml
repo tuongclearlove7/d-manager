@@ -3,6 +3,7 @@ version: "3.8"
 services:
   socket-server:
     build: .
+    command: python backend/app/manager.py
     ports:
       - "9000:9000"
     restart: always
@@ -11,10 +12,12 @@ services:
 
   deploy-listen:
     build: .
-    entrypoint: ["python", "backend/app/listen.py"]
+    command: python backend/app/listen.py
     environment:
       - WS_SERVER=ws://socket-server:9000
     depends_on:
       - socket-server
+    restart: always
     volumes:
+      - .:/app              # 👈 QUAN TRỌNG (mount project + .git)
       - ./data:/app/data

@@ -1,13 +1,16 @@
 import asyncio
 import json
 import os
+import subprocess
+from datetime import datetime
 import websockets
 
 SERVER = os.getenv("WS_SERVER", "ws://socket-server:9000")
 
 DATA_DIR = "/app/data"
 DATA_FILE = os.path.join(DATA_DIR, "data.txt")
-DEPLOY_TRIGGER = os.path.join(DATA_DIR, "deploy.txt")
+
+PROJECT_NAME = "d-manager"
 
 
 # =========================
@@ -23,24 +26,43 @@ def ensure_data_directory():
 
 
 # =========================
+# GIT FUNCTIONS
+# =========================
+def get_commit():
+    return subprocess.check_output(
+        ["git", "rev-parse", "--short", "HEAD"]
+    ).decode().strip()
+
+
+def get_commit_message():
+    return subprocess.check_output(
+        ["git", "log", "-1", "--pretty=%B"]
+    ).decode().strip()
+
+
+def get_changed_files():
+    files = subprocess.check_output(
+        ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"]
+    ).decode().strip().split("\n")
+
+    return [f for f in files if f]
+
+
+# =========================
 # SAVE HISTORY
 # =========================
 def save_to_file(payload):
     ensure_data_directory()
 
-    try:
-        with open(DATA_FILE, "a", encoding="utf-8") as f:
-            f.write(json.dumps(payload) + "\n")
+    with open(DATA_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(payload) + "\n")
 
-        os.chmod(DATA_FILE, 0o666)
-        print("[LISTEN] Saved to data.txt")
-
-    except Exception as e:
-        print("[FILE ERROR]", e)
+    os.chmod(DATA_FILE, 0o666)
+    print("[LISTEN] Saved to data.txt")
 
 
 # =========================
-# SEND TO SOCKET SERVER
+# SEND TO SOCKET
 # =========================
 async def send(payload):
     try:
@@ -55,41 +77,40 @@ async def send(payload):
 
 
 # =========================
-# WATCH DEPLOY FILE
+# WATCH GIT HEAD
 # =========================
-async def watch_deploy():
-    print("[LISTEN] Waiting for deploy trigger...")
+async def watch_git():
+    print("[LISTEN] Watching for new commits...")
 
     ensure_data_directory()
-    last_content = ""
+    last_commit = None
 
     while True:
         try:
-            if os.path.exists(DEPLOY_TRIGGER):
+            current_commit = get_commit()
 
-                with open(DEPLOY_TRIGGER, "r", encoding="utf-8") as f:
-                    content = f.read().strip()
+            if current_commit != last_commit:
+                last_commit = current_commit
 
-                # chỉ xử lý khi có nội dung mới
-                if content and content != last_content:
-                    last_content = content
+                payload = {
+                    "project": PROJECT_NAME,
+                    "status": "SUCCESS",
+                    "message": "New deploy detected",
+                    "commit": current_commit,
+                    "commit_message": get_commit_message(),
+                    "files_changed": get_changed_files(),
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
 
-                    try:
-                        payload = json.loads(content)
-                    except json.JSONDecodeError:
-                        print("[ERROR] deploy.txt is not valid JSON")
-                        await asyncio.sleep(2)
-                        continue
+                save_to_file(payload)
+                await send(payload)
 
-                    save_to_file(payload)
-                    await send(payload)
-
-            await asyncio.sleep(2)
+            await asyncio.sleep(5)
 
         except Exception as e:
             print("[WATCH ERROR]", e)
-            await asyncio.sleep(2)
+            await asyncio.sleep(5)
 
 
 if __name__ == "__main__":
-    asyncio.run(watch_deploy())
+    asyncio.run(watch_git())
