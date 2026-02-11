@@ -6,15 +6,20 @@ services:
       - "9000:9000"
     restart: always
     volumes:
-      - ./data.txt:/app/data.txt   # 🔥 giữ data khi recreate
+      - ./data.txt:/app/data.txt
 
   deploy-notifier:
     image: python:3.11-slim
-    container_name: deploy-notifier
     working_dir: /app
     volumes:
       - ./deploy_notifier.py:/app/deploy_notifier.py
-    entrypoint: ["sh", "-c", "pip install websockets && python deploy_notifier.py"]
+    entrypoint:
+      - sh
+      - -c
+      - |
+        pip show websockets >/dev/null 2>&1 || pip install websockets
+        python deploy_notifier.py "$@"
+      - --
     environment:
       - WS_SERVER=ws://socket-server:9000
     depends_on:

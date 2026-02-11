@@ -1,15 +1,11 @@
 FROM python:3.11-slim
 
-ENV PYTHONUNBUFFERED=1
-
 WORKDIR /app
 
-# cài lib cần thiết
-RUN pip install --no-cache-dir websockets
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# copy source
 COPY socket_server.py .
-
-EXPOSE 9000
+COPY deploy_notifier.py .
 
 CMD ["python", "socket_server.py"]
