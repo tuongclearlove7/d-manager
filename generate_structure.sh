@@ -3,7 +3,7 @@
 echo "Generating project structure..."
 
 # =============================
-# CREATE DIRECTORIES
+# CREATE DIRECTORIES (IF NOT EXIST)
 # =============================
 
 mkdir -p backend/app/config
@@ -11,25 +11,37 @@ mkdir -p backend/app/modules
 mkdir -p backend/app/websocket
 
 # =============================
-# CREATE CORE FILES
+# CREATE CORE FILES (IF NOT EXIST)
 # =============================
 
-touch backend/app/main.py
-touch backend/app/database.py
-touch backend/app/listen.py
-touch backend/app/config/config.py
-touch backend/app/websocket/manager.py
-touch deploy.sh
-touch Dockerfile
-touch docker-compose.yml
-touch requirements.txt
-touch index.html
+create_file_if_not_exists () {
+  if [ ! -f "$1" ]; then
+    touch "$1"
+    echo "Created: $1"
+  else
+    echo "Skipped (exists): $1"
+  fi
+}
+
+create_file_if_not_exists backend/app/main.py
+create_file_if_not_exists backend/app/database.py
+create_file_if_not_exists backend/app/listen.py
+create_file_if_not_exists backend/app/config/config.py
+create_file_if_not_exists backend/app/websocket/manager.py
+create_file_if_not_exists deploy.sh
+create_file_if_not_exists Dockerfile
+create_file_if_not_exists docker-compose.yml
+create_file_if_not_exists requirements.txt
+create_file_if_not_exists index.html
 
 # =============================
-# WRITE create_module.sh
+# WRITE create_module.sh (IF NOT EXIST)
 # =============================
 
-cat <<'EOF' > create_module.sh
+if [ ! -f create_module.sh ]; then
+  echo "Writing create_module.sh..."
+
+  cat <<'EOF' > create_module.sh
 #!/bin/bash
 
 BASE_DIR="backend/app/modules"
@@ -64,9 +76,12 @@ def get_all():
     return {"message": "$MODULE_NAME controller working"}
 EOT
 
+# Capitalize first letter
+CAPITALIZED="$(tr '[:lower:]' '[:upper:]' <<< ${MODULE_NAME:0:1})${MODULE_NAME:1}"
+
 # Create service.py
 cat <<EOT > "$MODULE_PATH/service.py"
-class ${MODULE_NAME^}Service:
+class ${CAPITALIZED}Service:
 
     def get_all(self):
         return []
@@ -76,7 +91,7 @@ EOT
 cat <<EOT > "$MODULE_PATH/models/model.py"
 from pydantic import BaseModel
 
-class ${MODULE_NAME^}Model(BaseModel):
+class ${CAPITALIZED}Model(BaseModel):
     id: int
 EOT
 
@@ -84,20 +99,26 @@ EOT
 cat <<EOT > "$MODULE_PATH/models/dto.py"
 from pydantic import BaseModel
 
-class ${MODULE_NAME^}DTO(BaseModel):
+class ${CAPITALIZED}DTO(BaseModel):
     id: int
 EOT
 
 echo "Module $MODULE_NAME created successfully!"
 EOF
 
-chmod +x create_module.sh
+  chmod +x create_module.sh
+else
+  echo "Skipped (exists): create_module.sh"
+fi
 
 # =============================
-# WRITE README.md
+# WRITE README.md (IF NOT EXIST)
 # =============================
 
-cat <<'EOF' > README.md
+if [ ! -f README.md ]; then
+  echo "Writing README.md..."
+
+  cat <<'EOF' > README.md
 # D-Manager
 
 ## 🚀 Run Project
@@ -139,7 +160,10 @@ backend/app/modules/deploy/
 └── models/
     ├── model.py
     └── dto.py
-
 EOF
 
-echo "Structure generated successfully!"
+else
+  echo "Skipped (exists): README.md"
+fi
+
+echo "Structure checked / generated successfully!"
