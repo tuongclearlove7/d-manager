@@ -21,7 +21,6 @@ def ensure_data_directory():
         os.chmod(DATA_DIR, 0o777)
     except:
         pass
-    print("[INIT] Data directory ready")
 
 
 # =========================
@@ -34,30 +33,26 @@ def run_command(cmd):
             capture_output=True,
             text=True
         )
-
         return result.returncode, result.stdout.strip(), result.stderr.strip()
-
     except Exception as e:
         return 1, "", str(e)
 
 
 # =========================
-# GIT FUNCTIONS
+# GIT SAFE FUNCTIONS
 # =========================
 def get_commit():
-    code, out, err = run_command(["git", "rev-parse", "--short", "HEAD"])
-    if code == 0:
-        return out
-    return None
+    code, out, _ = run_command(["git", "rev-parse", "--short", "HEAD"])
+    return out if code == 0 else "unknown"
 
 
 def get_commit_message():
-    code, out, err = run_command(["git", "log", "-1", "--pretty=%B"])
+    code, out, _ = run_command(["git", "log", "-1", "--pretty=%B"])
     return out if code == 0 else ""
 
 
 def get_changed_files():
-    code, out, err = run_command(
+    code, out, _ = run_command(
         ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"]
     )
     if code == 0 and out:
@@ -76,27 +71,25 @@ def run_deploy():
     )
 
     if code == 0:
-        print("[DEPLOY] SUCCESS")
         return "SUCCESS", out[-1000:]
     else:
-        print("[DEPLOY] FAILED")
         return "FAILED", (err or out)[-1000:]
 
 
 # =========================
-# SAVE HISTORY
+# SAVE HISTORY (ALWAYS WRITE)
 # =========================
 def save_to_file(payload):
     ensure_data_directory()
-    with open(DATA_FILE, "a", encoding="utf-8") as f:
-        f.write(json.dumps(payload) + "\n")
-
     try:
-        os.chmod(DATA_FILE, 0o666)
-    except:
-        pass
+        with open(DATA_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(payload) + "\n")
 
-    print("[LISTEN] Saved to data.txt")
+        os.chmod(DATA_FILE, 0o666)
+        print("[LISTEN] Saved to data.txt")
+
+    except Exception as e:
+        print("[FILE ERROR]", e)
 
 
 # =========================
@@ -109,7 +102,6 @@ async def send(payload):
                 "type": "deploy",
                 "payload": payload
             }))
-            print("[LISTEN] Sent to WebSocket")
     except Exception as e:
         print("[SOCKET ERROR]", e)
 
@@ -118,25 +110,21 @@ async def send(payload):
 # WATCH GIT HEAD
 # =========================
 async def watch_git():
-    print("[LISTEN] Watching for new commits...")
-
+    print("[LISTEN] Service started")
     ensure_data_directory()
 
-    # 🚫 KHÔNG DEPLOY NGAY KHI START
-    last_commit = get_commit()
-
-    if not last_commit:
-        print("[INIT ERROR] Cannot read git commit")
-        return
-
-    print(f"[INIT] Current commit: {last_commit}")
+    last_commit = None
 
     while True:
         try:
             current_commit = get_commit()
 
-            if current_commit and current_commit != last_commit:
-                print(f"[CHANGE DETECTED] {current_commit}")
+            # Nếu chưa có commit trước đó → set và ghi log lần đầu
+            if last_commit is None:
+                last_commit = current_commit
+
+            # Nếu commit thay đổi
+            if current_commit != last_commit:
                 last_commit = current_commit
 
                 status, deploy_log = run_deploy()
@@ -154,11 +142,22 @@ async def watch_git():
                 save_to_file(payload)
                 await send(payload)
 
-            await asyncio.sleep(5)
-
         except Exception as e:
+            # 🚨 Nếu có lỗi vẫn ghi log
+            payload = {
+                "project": PROJECT_NAME,
+                "status": "ERROR",
+                "message": str(e),
+                "commit": "unknown",
+                "commit_message": "",
+                "files_changed": [],
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+
+            save_to_file(payload)
             print("[WATCH ERROR]", e)
-            await asyncio.sleep(5)
+
+        await asyncio.sleep(5)
 
 
 if __name__ == "__main__":
