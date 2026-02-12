@@ -3,6 +3,7 @@ version: "3.8"
 services:
   socket-server:
     build: .
+    image: d-manager:latest
     container_name: d-manager-socket-server
     command: python backend/app/main.py
     ports:
@@ -14,7 +15,7 @@ services:
       - dmanager-net
 
   deploy-listen:
-    build: .
+    image: d-manager:latest
     container_name: d-manager-deploy-listen
     command: python backend/app/listen.py
     environment:
@@ -23,9 +24,8 @@ services:
       - socket-server
     restart: always
     volumes:
-      - .:/app
       - ./data:/app/data
-      - /var/run/docker.sock:/var/run/docker.sock   # 👈 QUAN TRỌNG
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - dmanager-net
 
