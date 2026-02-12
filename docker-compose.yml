@@ -11,11 +11,18 @@ services:
       - ./data:/app/data
     networks:
       - dmanager-net
-    healthcheck: # Thêm để depend_on ổn định hơn
-      test: ["CMD", "curl", "-f", "http://localhost:9000"] # hoặc ws nếu có endpoint health
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    # Tạm thời xóa healthcheck để tránh lỗi "unhealthy"
+    # Lý do: WebSocket server không có HTTP endpoint → curl http://localhost:9000 fail
+    # Nếu muốn thêm lại sau, dùng TCP check (xem comment bên dưới)
+
+    # Ví dụ healthcheck TCP-based (nếu cài netcat trong Dockerfile):
+    # healthcheck:
+    #   test: ["CMD-SHELL", "nc -z localhost 9000 || exit 1"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 15s
+    #   start_interval: 3s
 
   deploy-listen:
     image: d-manager:latest
@@ -24,14 +31,13 @@ services:
     environment:
       - WS_SERVER=ws://socket-server:9000
     depends_on:
-      socket-server:
-        condition: service_healthy # Chờ socket-server sẵn sàng
+      - socket-server          # Chỉ chờ start (không cần healthy)
     restart: always
     volumes:
-      - .:/app # Mount toàn bộ code để git pull tự động áp dụng
+      - .:/app                 # Mount code để git pull tự động áp dụng
       - ./data:/app/data
-      - /var/run/docker.sock:/var/run/docker.sock # Giữ nếu cần chạy docker bên trong
-    working_dir: /app # Đảm bảo cwd đúng
+      - /var/run/docker.sock:/var/run/docker.sock  # Cần thiết cho listen.py chạy docker compose
+    working_dir: /app
     networks:
       - dmanager-net
 
