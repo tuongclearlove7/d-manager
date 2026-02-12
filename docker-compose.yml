@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   socket-server:
     build: .
@@ -13,6 +11,11 @@ services:
       - ./data:/app/data
     networks:
       - dmanager-net
+    healthcheck: # Thêm để depend_on ổn định hơn
+      test: ["CMD", "curl", "-f", "http://localhost:9000"] # hoặc ws nếu có endpoint health
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   deploy-listen:
     image: d-manager:latest
@@ -21,12 +24,14 @@ services:
     environment:
       - WS_SERVER=ws://socket-server:9000
     depends_on:
-      - socket-server
+      socket-server:
+        condition: service_healthy # Chờ socket-server sẵn sàng
     restart: always
     volumes:
-      - .:/app # ✅ thêm dòng này
+      - .:/app # Mount toàn bộ code để git pull tự động áp dụng
       - ./data:/app/data
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock # Giữ nếu cần chạy docker bên trong
+    working_dir: /app # Đảm bảo cwd đúng
     networks:
       - dmanager-net
 
